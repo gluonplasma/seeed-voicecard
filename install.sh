@@ -5,52 +5,6 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Check for enough space on /boot volume
-boot_line=$(df -h | grep /boot | head -n 1)
-if [ "x${boot_line}" = "x" ]; then
-  echo "Warning: /boot volume not found .."
-else
-  boot_space=$(echo $boot_line | awk '{print $4;}')
-  free_space=$(echo "${boot_space%?}")
-  unit="${boot_space: -1}"
-  if [[ "$unit" = "K" ]]; then
-    echo "Error: Not enough space left ($boot_space) on /boot"
-    exit 1
-  elif [[ "$unit" = "M" ]]; then
-    if [ "$free_space" -lt "25" ]; then
-      echo "Error: Not enough space left ($boot_space) on /boot"
-      exit 1
-    fi
-  fi
-fi
-
-#
-# make sure that we are on something ARM/Raspberry related
-# either a bare metal Raspberry or a qemu session with 
-# Raspberry stuff available
-# - check for /boot/overlays
-# - dtparam and dtoverlay is available
-errorFound=0
-OVERLAYS=/boot/overlays
-[ -d /boot/firmware/overlays ] && OVERLAYS=/boot/firmware/overlays
-
-if [ ! -d $OVERLAYS ] ; then
-  echo "$OVERLAYS not found or not a directory" 1>&2
-  errorFound=1
-fi
-# should we also check for alsactl and amixer used in seeed-voicecard?
-PATH=$PATH:/opt/vc/bin
-for cmd in dtparam dtoverlay ; do
-  if ! which $cmd &>/dev/null ; then
-    echo "$cmd not found" 1>&2
-    echo "You may need to run ./ubuntu-prerequisite.sh"
-    errorFound=1
-  fi
-done
-if [ $errorFound = 1 ] ; then
-  echo "Errors found, exiting." 1>&2
-  exit 1
-fi
 
 ver="0.3"
 uname_r=$(uname -r)
@@ -158,9 +112,9 @@ install_module "./" "seeed-voicecard"
 
 
 # install dtbos
-cp seeed-2mic-voicecard.dtbo $OVERLAYS
-cp seeed-4mic-voicecard.dtbo $OVERLAYS
-cp seeed-8mic-voicecard.dtbo $OVERLAYS
+#cp seeed-2mic-voicecard.dtbo $OVERLAYS
+#cp seeed-4mic-voicecard.dtbo $OVERLAYS
+#cp seeed-8mic-voicecard.dtbo $OVERLAYS
 
 #install alsa plugins
 # no need this plugin now
@@ -176,16 +130,16 @@ grep -q "^snd-soc-wm8960$" /etc/modules || \
   echo "snd-soc-wm8960" >> /etc/modules  
 
 #set dtoverlays
-CONFIG=/boot/config.txt
-[ -f /boot/firmware/usercfg.txt ] && CONFIG=/boot/firmware/usercfg.txt
+#CONFIG=/boot/config.txt
+#[ -f /boot/firmware/usercfg.txt ] && CONFIG=/boot/firmware/usercfg.txt
 
-sed -i -e 's:#dtparam=i2c_arm=on:dtparam=i2c_arm=on:g'  $CONFIG || true
-grep -q "^dtoverlay=i2s-mmap$" $CONFIG || \
-  echo "dtoverlay=i2s-mmap" >> $CONFIG
+#sed -i -e 's:#dtparam=i2c_arm=on:dtparam=i2c_arm=on:g'  $CONFIG || true
+#grep -q "^dtoverlay=i2s-mmap$" $CONFIG || \
+#  echo "dtoverlay=i2s-mmap" >> $CONFIG
 
 
-grep -q "^dtparam=i2s=on$" $CONFIG || \
-  echo "dtparam=i2s=on" >> $CONFIG
+#grep -q "^dtparam=i2s=on$" $CONFIG || \
+#  echo "dtparam=i2s=on" >> $CONFIG
 
 #install config files
 mkdir /etc/voicecard || true
